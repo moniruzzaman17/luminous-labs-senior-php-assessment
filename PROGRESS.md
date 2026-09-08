@@ -7,7 +7,7 @@
 - **14:51** - Started the assessment clock. Read and visually checked all four PDF pages; inspected Git, PHP, Composer, database, Docker/WSL, extensions, and occupied ports.
 - **14:53** - Completed the implementation plan. Work paused because the session was still in planning mode; this waiting gap is not active implementation time.
 - **16:37** - Implementation resumed after approval. Created the Laravel 13 application and initialized Git without staging or committing files.
-- **~16:42** - While dependencies were installing, the submitter emphasized already-corrupted shipment rows. Confirmed the separate, non-mutating audit approach and the need to preserve raw evidence.
+- **~16:42** - While dependencies were installing, I emphasized already-corrupted shipment rows. Confirmed the separate, non-mutating audit approach and the need to preserve raw evidence.
 - **16:46-16:51** - Implemented the three tickets, with most code and tests on Ticket A. First run passed 15/17 tests; corrected two test-harness issues, then passed 19/19 tests including database concurrency.
 - **16:52-16:56** - Simplified the API-only package, wrote reviewer documentation, passed 19 tests, and exercised the signed webhook over HTTP.
 - **16:57-17:00** - Started an isolated temporary MySQL 8.4.11 instance on port 3307 and passed the expanded final suite: 21 tests, 59 assertions, including four-process concurrency.
@@ -15,8 +15,9 @@
 - **17:53** - Began the final delivery review: corrected permanent webhook failure semantics, safe logging, event identity, historical batch evidence, edge tests, and reviewer documentation before repeating MySQL and HTTP verification.
 - **18:09-18:18** - HTTP review exposed an importer overwrite risk; changed imports to append-only atomic inserts, moved worker credentials out of process arguments, and passed a 31-test/94-assertion suite on MySQL 8.4.11.
 - **18:23-18:24** - Staged review aligned invalid-signature visibility with the client report; the final MySQL run passed 32 tests and 99 assertions plus formatting.
+- **19:54-20:14** - My review rejected mixed security/payment reporting. AI-assisted changes separated the channels and command views; MySQL passed 34 tests/141 assertions plus focused and concurrency runs.
 
-Recorded active implementation and review work was approximately 55 minutes. The wall-clock span includes the planning-mode/user gap and is not represented as active work; the work remained well within the assignment's 3–4 hour ceiling.
+Recorded active implementation and review work was approximately 75 minutes. The wall-clock span includes planning-mode and user-review gaps and is not represented as active work; the work remained well within the assignment's 3–4 hour ceiling.
 
 ## Simulated interrupt narrative required by the assignment
 

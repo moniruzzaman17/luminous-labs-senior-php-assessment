@@ -1,5 +1,11 @@
-Fenwick Retail: The successful-payment receiver is complete: repeated notifications do not create repeated orders, and suspicious or failed notifications are visible for review. Before going live, please provide the provider's actual message format and signing setup, and confirm the operational contact and monitoring destination for payment alerts.
+## Fenwick Retail
 
-Northgate Logistics: New imports now follow the confirmed format for their source, and uncertain dates are stopped for review while the original value and batch reference are retained. Previously stored records still require investigation; please provide the original files, affected batch information, confirmed office formats, and a reliable way to match source rows to stored records.
+**Completed:** Successful payment notifications create orders, repeated notifications do not create duplicate orders, and requests that fail security checks are reviewed separately from verified payment notifications that fail during processing. **Current consideration:** This has been demonstrated with the assessment's sample format, but the live provider arrangements are still unknown. **Needed from you:** Please provide the provider's actual notification format and security setup, and name the person who should receive payment-processing alerts.
 
-Marlow Events: The next-events response is implemented with stable ordering and only the event name, start time, location, and reference currently treated as safe to expose. Should the endpoint be publicly accessible, and which event details are approved for public display? Those answers are required before live access can be enabled.
+## Northgate Logistics
+
+**Completed:** New imports use the configured date format for each source, and uncertain dates are held for review; previously stored records have not been automatically corrected. **Current consideration:** Safe correction of earlier records depends on evidence from the original imports and a reliable way to identify each stored record. **Needed from you:** Please provide the original import files, affected batch details, confirmed office formats, and a reliable reference for matching source rows with stored records.
+
+## Marlow Events
+
+**Completed:** The upcoming-events service can return the next 10 eligible events using only limited details. **Current consideration:** The original request does not say whether access should be public or restricted; public access would allow anyone with the address to view the approved event information. Access is currently disabled by default and is always disabled in production, with no sign-in system added. **Needed from you:** Please confirm whether public access is intended and which event details may be shared.

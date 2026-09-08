@@ -6,7 +6,7 @@ This repository packages three unrelated client tickets in one Laravel applicati
 
 | Ticket | Delivered | Production input still required |
 |---|---|---|
-| A — Fenwick Retail | Signed payment webhook, durable payment uniqueness, retry behavior, safe failure logs, inspection command, and extensive tests | Actual provider payload/signing contract and alert owner/destination |
+| A — Fenwick Retail | Signed payment webhook, durable payment uniqueness, retry behavior, separate security/processing records, inspection command, and extensive tests | Actual provider payload/signing contract and alert owner/destination |
 | B — Northgate Logistics | Strict source-specific parser, atomic CSV import, retained source evidence, and read-only historical audit | Original files, affected batches, confirmed office formats, record mapping, and correction approval |
 | C — Marlow Events | Deterministic next-10 query, limited response fields, fictional data, and access guard | Intended audience, approved public fields, authentication approach, and business timezone |
 
@@ -41,7 +41,7 @@ Before migrating or testing, set `DB_USERNAME` and `DB_PASSWORD` in `.env` and f
 - Composer 2.x.
 - MySQL 8.0 or newer. MariaDB can be used for local development, but it does not replace MySQL-specific verification.
 
-Initial runtime and database downloads are outside the short review path. Docker was omitted from this delivery at the submitter's request.
+Initial runtime and database downloads are outside the short review path. I asked to omit Docker from this delivery.
 
 ## Installation
 
@@ -187,10 +187,20 @@ Use `curl.exe` in PowerShell. A verified but permanently invalid event is record
 
 ```bash
 php scripts/send-sample-webhook.php http://127.0.0.1:8000/webhooks/payment-provider local-demo-secret-change-me examples/payment-invalid.json
-php artisan webhooks:failures --lines=20
+php artisan webhooks:failures
 ```
 
-Temporary processing failures return `503` with `Retry-After: 30`; success is returned only after the order transaction commits. Safe failure context is written to `storage/logs/webhook-*.log`, with PHP `error_log` as a fallback when Laravel logging fails. Production should route this channel to the organisation's central error-monitoring service and page the agreed payments on-call contact; no external alert integration is claimed here.
+The default command shows only verified provider events that require attention, which is the normal operational check. Security rejections and a combined diagnostic view are explicit:
+
+```bash
+php artisan webhooks:failures --type=processing
+php artisan webhooks:failures --type=security
+php artisan webhooks:failures --type=all
+```
+
+Security rejections are warning-level records in `storage/logs/webhook-security-*.log`; supplied signatures, raw bodies, untrusted event IDs, and payment details are never retained. Verified processing failures are error-level records in `storage/logs/webhook-processing-*.log` and may contain validated event/payment IDs. Both use 14-day daily retention and retain PHP `error_log` fallback behavior if Laravel logging fails.
+
+Temporary processing failures return `503` with `Retry-After: 30`; success is returned only after the order transaction commits. A generic endpoint rate limit was deliberately omitted because an unexpected but legitimate provider burst could be rejected and amplify retries. Production security-volume control and aggregation should be agreed at the gateway, firewall, or monitoring layer after the provider's real delivery behavior is known. The processing stream should then alert the agreed payments on-call contact; no external integration is claimed here.
 
 ## Ticket B demonstration
 
@@ -248,16 +258,17 @@ AI_NOTES.md
 |---|---|---|
 | `WebhookSignatureVerifier` | Verifies timestamped raw-body signatures | A |
 | `PaymentWebhookProcessor` | Commits an order and resolves only relevant uniqueness conflicts | A |
-| `WebhookFailureReporter` / `webhooks:failures` | Records safe failure context and provides read-only inspection | A |
+| `WebhookFailureReporter` / `webhooks:failures` | Separates security noise from verified processing failures and provides read-only inspection | A |
 | `ShipmentDateParser` / shipment commands | Strict source parsing, atomic import, and read-only historical audit | B |
 | `UpcomingEventController` | Applies access, eligibility, field, limit, and ordering policy | C |
 
 ## Request and processing flow
 
 ```text
-Payment provider -> raw-body signature check -> envelope/payment validation
+Payment provider -> raw-body signature check -> sanitized security warning or continue
+                 -> envelope/payment validation -> processing record if attention is needed
                  -> MySQL transaction + unique payment key -> created/duplicate
-                 -> safe log + rejected (permanent) or 503 (temporary)
+                 -> rejected (permanent) or 503 (temporary)
 
 Shipment CSV -> exact source format -> validate every row -> dry run or one transaction
 Existing shipments -> compare retained evidence -> report only, never mutate
@@ -267,12 +278,13 @@ Events request -> feature/production guard -> eligible UTC query -> four public 
 
 ## Testing strategy
 
-Testing effort follows business risk. Ticket A covers the real raw-body verification path, missing/malformed/stale signatures, body tampering, validation, unrelated events, sequential retries, different events for one payment, conflicts, failure and recovery, safe inspection, and four overlapping MySQL processes. Ticket B covers every configured format, ambiguity, impossible and leap-year dates, whitespace, unknown sources, atomic dry-run/import, and historical rows without evidence. Ticket C covers access policy, every eligibility filter, stable ordering, equal times, the 10-item limit, UTC boundary, empty results, and exact response fields.
+Testing effort follows business risk. Ticket A covers the real raw-body verification path, missing/malformed/stale signatures, body tampering, validation, unrelated events, sequential retries, different events for one payment, conflicts, failure and recovery, security/processing separation, sensitive-data exclusion, inspection modes, and four overlapping MySQL processes. Ticket B covers every configured format, ambiguity, impossible and leap-year dates, whitespace, unknown sources, atomic dry-run/import, and historical rows without evidence. Ticket C covers access policy, every eligibility filter, stable ordering, equal times, the 10-item limit, UTC boundary, empty results, and exact response fields.
 
 ## Assumptions and limitations
 
 - A single provider account is represented, so `payment_id` and `provider_event_id` are globally unique. A multi-provider deployment must add provider/account identity to both keys.
 - The real provider contract, rotation policy, retry schedule, and operational alert destination remain unknown.
+- Gateway or firewall aggregation for hostile security traffic remains an operational decision; no generic application rate limit is imposed on legitimate provider delivery.
 - The synchronous webhook is appropriate for assessment scale; high sustained volume would require measured capacity work and likely a durable inbox plus queue.
 - Existing shipment dates are not automatically repaired because the necessary source evidence and approval were not supplied.
 - Event visibility uses UTC and four conservative fields. Audience and authentication are unresolved, so production access remains disabled in code.

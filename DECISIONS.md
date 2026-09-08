@@ -18,13 +18,21 @@ The least-confident assumption is Marlow's intended audience. If it is wrong, pr
 
 ## 2. How was AI used on Ticket A, and what was corrected?
 
-AI was asked to propose and implement the Laravel structure, raw-body signature verification, transactional payment processing, schema, reproducible sender, and risk-based tests. The submitter did not personally edit or override the generated implementation; the changes below were found and applied during agent self-review and automated verification.
+I asked AI to propose and implement the Laravel structure, raw-body signature verification, transactional payment processing, schema, reproducible sender, and risk-based tests. I did not manually author the source. Ownership of each finding is stated below: the earlier defects were found during agent self-review, while I identified and directed the later reporting separation.
 
 The first implementation hydrated `amount_minor` without an integer cast while strict duplicate comparison expected an integer. MySQL-family PDO hydration could therefore classify a valid retry as a conflict. `App\Models\Order::casts()` now casts it, and the repeated-delivery tests verify the correction.
 
 The final review found three further weaknesses. First, verified but permanently invalid events returned non-2xx responses, which could cause endless provider retries. `App\Http\Controllers\PaymentWebhookController::__invoke()` now records safe context and returns `200 {"status":"rejected"}`, while only temporary processing failures return `503` with `Retry-After`. Second, exception messages were included in failure logs; these were replaced with exception classes so SQL details or credentials cannot leak. Third, event identity was not independently constrained. The `orders.provider_event_id` unique index and `App\Services\Payments\PaymentWebhookProcessor::process()` now distinguish a retry for the same payment from an event ID reused for another payment.
 
 Tests verify raw-body tampering, missing/malformed/stale signatures, signed malformed JSON, invalid fields, unrelated events, repeated delivery, different events for one payment, reused event IDs, temporary failure and recovery, unrelated failure propagation, safe failure inspection, and four overlapping processes against MySQL. The final code is demonstrated by `WebhookSignatureVerifier::verify()`, `PaymentWebhookController::__invoke()`, `PaymentWebhookProcessor::process()`, the assessment-table migration, and `PaymentWebhookTest`/`WebhookConcurrencyTest`/`WebhookFailureInspectionTest`.
+
+### My review and override
+
+The initial AI-assisted implementation routed invalid-signature requests through the same reporting path as verified provider-processing failures. It made rejected requests visible, but during my review I identified that a public webhook could receive large volumes of untrusted traffic, causing genuine payment failures to be buried in operational noise.
+
+I rejected that reporting design and directed a separation between security rejections and verified processing failures. Invalid requests now record only a sanitized rejection category and reason through `WebhookFailureReporter::reportSecurityRejection()`, while `reportProcessingFailure()` retains only the safe verified identifiers and failure details needed for investigation. `InspectWebhookFailures::handle()` defaults to the processing view and requires an explicit `--type=security` or `--type=all` for other views. I did not add a generic webhook rate limit because it could reject legitimate provider bursts and amplify retries. `WebhookFailureInspectionTest` verifies the separation, severity, sensitive-data exclusion, default priority, all-view behavior, and invalid option handling through real log files and the executable command.
+
+This was my decision and an AI-assisted correction. I identified the operational risk, selected the separation policy, and defined the acceptance criteria. I used AI to implement the change and generate supporting tests, and I accepted the result only after the behavior I requested was demonstrated.
 
 ## 3. What probably fails first at 100 times Fenwick's volume, and how would we detect it?
 
@@ -36,9 +44,10 @@ I would instrument webhook duration (p50/p95/p99), status counts, provider retry
 
 - No Stripe SDK or claim of Stripe compatibility: the real provider contract is missing, and pretending otherwise would increase payment risk.
 - No queue, Redis, microservice, webhook dashboard, or alert-vendor package: they would exceed the 3–4 hour scope without measured load or an agreed operations owner. A file channel, PHP fallback, retry response, and read-only command cover the assessment failure path.
+- No generic application rate limit on the public webhook: an uninformed limit could reject legitimate provider bursts and amplify retries. Gateway/firewall aggregation and monitoring thresholds require the provider's delivery profile and an operational owner.
 - No separate processed-event table: the order stores the provider event ID, and one transaction makes the required durable state atomic. A durable inbox becomes useful only with asynchronous processing or broader event types.
 - No automatic historical date repair: the original evidence and client approval are absent, so mass changes could deepen existing corruption.
 - No invented authentication or user system: Marlow has not identified the consumers. Production denial is a smaller and safer interim decision.
 - No frontend, administration panel, repository abstraction, Swagger generator, or extra packages: they do not reduce the material risks being assessed.
-- No Docker configuration: it was removed from scope at the submitter's explicit request; the native PHP, Composer, and MySQL path is documented and verified.
+- No Docker configuration: I explicitly removed it from scope; the native PHP, Composer, and MySQL path is documented and verified.
 - No shared production deployment recommendation: one application/database exists only to package the three unrelated tickets for assessment review.
