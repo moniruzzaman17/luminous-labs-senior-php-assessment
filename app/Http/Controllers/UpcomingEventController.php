@@ -9,7 +9,7 @@ final class UpcomingEventController extends Controller
 {
     public function __invoke(): JsonResponse
     {
-        if (config('app.env') === 'production' || ! config('features.public_upcoming_events')) {
+        if (! config('features.public_upcoming_events')) {
             return response()->json(['message' => 'Public event access is pending client confirmation.'], 403);
         }
 

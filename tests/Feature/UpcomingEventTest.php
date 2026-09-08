@@ -53,10 +53,14 @@ class UpcomingEventTest extends TestCase
         $this->assertSame([$first->id, $second->id], $ids);
     }
 
-    public function test_production_environment_is_denied_even_when_flag_is_enabled(): void
+    public function test_explicit_enablement_is_respected_in_production(): void
     {
         config(['features.public_upcoming_events' => true, 'app.env' => 'production']);
-        $this->getJson('/api/events/upcoming')->assertForbidden();
+        $this->event(['title' => 'Approved public event']);
+
+        $this->getJson('/api/events/upcoming')
+            ->assertOk()
+            ->assertJsonPath('data.0.title', 'Approved public event');
     }
 
     public function test_exact_time_boundary_is_included_and_response_is_utc(): void
