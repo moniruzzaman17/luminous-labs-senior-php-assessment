@@ -204,7 +204,7 @@ Temporary processing failures return `503` with `Retry-After: 30`; success is re
 
 ## Ticket B demonstration
 
-Known sources map to exactly one confirmed format in `config/imports.php`. The two visually identical `03/04/2026` values in the sample become different dates because their sources are explicit:
+Known sources map to exactly one configured assessment format in `config/imports.php`. The two visually identical `03/04/2026` values in the sample become different dates because their sources are explicit:
 
 ```bash
 php artisan shipments:import examples/shipments.csv
