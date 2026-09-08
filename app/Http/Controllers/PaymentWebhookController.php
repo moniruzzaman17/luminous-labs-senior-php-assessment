@@ -23,7 +23,7 @@ final class PaymentWebhookController extends Controller
         $rawBody = $request->getContent();
 
         if (! $signatureVerifier->verify($rawBody, $request->header('Payment-Signature'))) {
-            $reporter->report('Webhook rejected before processing.', ['reason' => 'invalid_signature']);
+            $reporter->reportSecurityRejection();
 
             return response()->json(['message' => 'Invalid webhook signature.'], 401);
         }
@@ -31,16 +31,13 @@ final class PaymentWebhookController extends Controller
         try {
             $event = json_decode($rawBody, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
-            $reporter->report('Signed webhook permanently rejected.', ['reason' => 'malformed_json']);
+            $reporter->reportProcessingFailure('malformed_json');
 
             return response()->json(['status' => 'rejected']);
         }
 
         if (! is_array($event)) {
-            $reporter->report('Signed webhook permanently rejected.', [
-                'reason' => 'invalid_envelope',
-                'invalid_fields' => ['body'],
-            ]);
+            $reporter->reportProcessingFailure('invalid_envelope', invalidFields: ['body']);
 
             return response()->json(['status' => 'rejected']);
         }
@@ -51,10 +48,10 @@ final class PaymentWebhookController extends Controller
         ]);
 
         if ($envelopeValidator->fails()) {
-            $reporter->report('Signed webhook permanently rejected.', [
-                'reason' => 'invalid_envelope',
-                'invalid_fields' => array_keys($envelopeValidator->errors()->messages()),
-            ]);
+            $reporter->reportProcessingFailure(
+                'invalid_envelope',
+                invalidFields: array_keys($envelopeValidator->errors()->messages()),
+            );
 
             return response()->json(['status' => 'rejected']);
         }
@@ -71,11 +68,11 @@ final class PaymentWebhookController extends Controller
         ]);
 
         if ($validator->fails()) {
-            $reporter->report('Signed webhook permanently rejected.', [
-                'event_id' => $event['id'],
-                'reason' => 'invalid_payment',
-                'invalid_fields' => array_keys($validator->errors()->messages()),
-            ]);
+            $reporter->reportProcessingFailure(
+                'invalid_payment',
+                eventId: $event['id'],
+                invalidFields: array_keys($validator->errors()->messages()),
+            );
 
             return response()->json(['status' => 'rejected']);
         }
@@ -87,19 +84,20 @@ final class PaymentWebhookController extends Controller
 
             return response()->json(['status' => $result->value], $result->value === 'created' ? 201 : 200);
         } catch (PaymentConflictException) {
-            $reporter->report('Signed webhook permanently rejected.', [
-                'event_id' => $validated['id'],
-                'payment_id' => $validated['data']['object']['id'],
-                'reason' => 'identity_or_payment_conflict',
-            ]);
+            $reporter->reportProcessingFailure(
+                'identity_or_payment_conflict',
+                eventId: $validated['id'],
+                paymentId: $validated['data']['object']['id'],
+            );
 
             return response()->json(['status' => 'rejected']);
         } catch (Throwable $exception) {
-            $reporter->report('Payment webhook processing failed.', [
-                'event_id' => $validated['id'],
-                'payment_id' => $validated['data']['object']['id'],
-                'exception' => $exception::class,
-            ]);
+            $reporter->reportProcessingFailure(
+                'temporary_processing_failure',
+                eventId: $validated['id'],
+                paymentId: $validated['data']['object']['id'],
+                exceptionClass: $exception::class,
+            );
 
             return response()
                 ->json(['message' => 'Webhook processing temporarily unavailable.'], 503)

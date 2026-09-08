@@ -52,15 +52,17 @@ return [
 
     'channels' => [
 
-        'webhook' => [
-            'driver' => 'stack',
-            'channels' => ['webhook_file', 'stderr'],
-            'ignore_exceptions' => false,
+        'webhook_security' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/webhook-security.log'),
+            'level' => 'warning',
+            'days' => 14,
+            'replace_placeholders' => true,
         ],
 
-        'webhook_file' => [
+        'webhook_processing' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/webhook.log'),
+            'path' => storage_path('logs/webhook-processing.log'),
             'level' => 'error',
             'days' => 14,
             'replace_placeholders' => true,
