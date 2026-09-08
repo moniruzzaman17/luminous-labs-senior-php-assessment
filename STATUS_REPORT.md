@@ -1,0 +1,5 @@
+Fenwick Retail: The successful-payment receiver is complete: repeated notifications do not create repeated orders, and suspicious or failed notifications are visible for review. Before going live, please provide the provider's actual message format and signing setup, and confirm the operational contact and monitoring destination for payment alerts.
+
+Northgate Logistics: New imports now follow the confirmed format for their source, and uncertain dates are stopped for review while the original value and batch reference are retained. Previously stored records still require investigation; please provide the original files, affected batch information, confirmed office formats, and a reliable way to match source rows to stored records.
+
+Marlow Events: The next-events response is implemented with stable ordering and only the event name, start time, location, and reference currently treated as safe to expose. Should the endpoint be publicly accessible, and which event details are approved for public display? Those answers are required before live access can be enabled.
