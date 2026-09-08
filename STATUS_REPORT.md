@@ -8,4 +8,4 @@
 
 ## Marlow Events
 
-**Completed:** The upcoming-events service can return the next 10 eligible events using only limited details. **Current consideration:** The original request does not say whether access should be public or restricted; public access would allow anyone with the address to view the approved event information. Access is currently disabled by default and is always disabled in production, with no sign-in system added. **Needed from you:** Please confirm whether public access is intended and which event details may be shared.
+**Completed:** The upcoming-events service can return the next 10 eligible events using only the event name, start time, location, and reference. **Current consideration:** The original request does not say whether access should be public or restricted, so access is currently disabled by default and no sign-in system has been added. Enabling public access would allow anyone with the address to view those four details. **Needed from you:** Please confirm whether public access is intended and which event details may be shared; if access should be restricted, please also identify the intended users.

@@ -21,7 +21,7 @@ composer install --no-interaction --prefer-dist
 cp .env.example .env
 php artisan key:generate
 mysql -u root -p -e "CREATE DATABASE luminous_assessment CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE luminous_assessment_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-php artisan migrate:fresh --seed
+php artisan migrate --seed
 composer check
 php artisan serve
 ```
@@ -109,7 +109,7 @@ $env:DB_PASSWORD = 'your_test_password'
 Run migrations only after confirming `.env` names the dedicated development database:
 
 ```bash
-php artisan migrate:fresh --seed
+php artisan migrate --seed
 ```
 
 The seeder creates 12 fictional public events to demonstrate the endpoint limit and two fictional historical shipment rows to demonstrate mismatch and missing-evidence audit results.
@@ -217,16 +217,16 @@ The first command validates without writing, the second atomically inserts new r
 
 ## Ticket C demonstration
 
-The endpoint is deliberately closed by default. For local review, set `UPCOMING_EVENTS_PUBLIC_ENABLED=true` in `.env`, then run:
+The endpoint is deliberately closed by default because the brief does not identify its users. Setting `UPCOMING_EVENTS_PUBLIC_ENABLED=true` is an explicit decision to make the limited response public in any environment; anyone with the address can then view those fields. To demonstrate that decision, update `.env`, then run:
 
 ```bash
 php artisan config:clear
 curl http://127.0.0.1:8000/api/events/upcoming
 ```
 
-It returns at most 10 fictional eligible events ordered by `starts_at`, then `id`, with only `id`, `title`, `starts_at`, and `location`. Times are stored and returned in UTC. Past, cancelled, draft, and private events are excluded. Production always returns `403`, even if the feature flag is enabled.
+It returns at most 10 fictional eligible events ordered by `starts_at`, then `id`, with only `id`, `title`, `starts_at`, and `location`. Times are stored and returned in UTC. Past, cancelled, draft, and private events are excluded. With the flag unset or false, every environment returns `403`; with it true, the same limited public response is enabled consistently. No authentication system is claimed or implied.
 
-Client clarification draft, not sent: “Should the upcoming events endpoint be publicly accessible, and which event details are approved for public display?” After the intended consumers are known, the smallest suitable policy would be either public access, existing session authentication, or a partner credential at this route boundary.
+Client clarification draft, not sent: “Should the upcoming events endpoint be publicly accessible, and which event details are approved for public display?” If Marlow approves public access and these four fields, enable the flag. If access must be restricted, identify the intended consumers first; only then choose the smallest suitable existing-session or partner-credential check.
 
 ## Project structure
 
@@ -273,7 +273,7 @@ Payment provider -> raw-body signature check -> sanitized security warning or co
 Shipment CSV -> exact source format -> validate every row -> dry run or one transaction
 Existing shipments -> compare retained evidence -> report only, never mutate
 
-Events request -> feature/production guard -> eligible UTC query -> four public fields
+Events request -> explicit public-access flag -> eligible UTC query -> four public fields
 ```
 
 ## Testing strategy
@@ -287,8 +287,8 @@ Testing effort follows business risk. Ticket A covers the real raw-body verifica
 - Gateway or firewall aggregation for hostile security traffic remains an operational decision; no generic application rate limit is imposed on legitimate provider delivery.
 - The synchronous webhook is appropriate for assessment scale; high sustained volume would require measured capacity work and likely a durable inbox plus queue.
 - Existing shipment dates are not automatically repaired because the necessary source evidence and approval were not supplied.
-- Event visibility uses UTC and four conservative fields. Audience and authentication are unresolved, so production access remains disabled in code.
-- A clean-machine installation was not available; verification used the current Windows workspace, native MySQL, and MariaDB as documented in `DECISIONS.md`.
+- Event visibility uses UTC and four conservative fields. Audience and authentication are unresolved, so access is disabled by default; enabling it is an explicit approval to expose those fields publicly in any environment.
+- A clean-machine installation was not available, so setup was not claimed as fresh-machine verification. Final database checks used the current Windows workspace and an isolated native MySQL 8.4.11 instance.
 
 ## Required documents
 
