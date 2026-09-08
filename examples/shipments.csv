@@ -1,0 +1,4 @@
+external_id,source,import_batch,shipment_date
+SHIP-UK-001,northgate_uk,BATCH-UK-2026-04,03/04/2026
+SHIP-US-001,northgate_us,BATCH-US-2026-03,03/04/2026
+SHIP-ISO-001,northgate_iso,BATCH-ISO-2026-04,2026-04-03
