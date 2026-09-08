@@ -13,7 +13,8 @@
 - **16:57-17:00** - Started an isolated temporary MySQL 8.4.11 instance on port 3307 and passed the expanded final suite: 21 tests, 59 assertions, including four-process concurrency.
 - **17:02-17:04** - Removed unused frontend/auth/queue scaffold, reran the full suite, and moved the test-database guard ahead of Laravel's migration traits after final review found an ordering flaw. Verified the guard refused the development database without changing its two seeded events.
 - **17:53** - Began the final delivery review: corrected permanent webhook failure semantics, safe logging, event identity, historical batch evidence, edge tests, and reviewer documentation before repeating MySQL and HTTP verification.
-- **18:09-18:18** - HTTP review exposed an importer overwrite risk; changed imports to append-only atomic inserts, moved worker credentials out of process arguments, and passed the final 31-test/94-assertion suite on MySQL 8.4.11.
+- **18:09-18:18** - HTTP review exposed an importer overwrite risk; changed imports to append-only atomic inserts, moved worker credentials out of process arguments, and passed a 31-test/94-assertion suite on MySQL 8.4.11.
+- **18:23-18:24** - Staged review aligned invalid-signature visibility with the client report; the final MySQL run passed 32 tests and 99 assertions plus formatting.
 
 Recorded active implementation and review work was approximately 55 minutes. The wall-clock span includes the planning-mode/user gap and is not represented as active work; the work remained well within the assignment's 3–4 hour ceiling.
 

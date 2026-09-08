@@ -23,6 +23,8 @@ final class PaymentWebhookController extends Controller
         $rawBody = $request->getContent();
 
         if (! $signatureVerifier->verify($rawBody, $request->header('Payment-Signature'))) {
+            $reporter->report('Webhook rejected before processing.', ['reason' => 'invalid_signature']);
+
             return response()->json(['message' => 'Invalid webhook signature.'], 401);
         }
 
